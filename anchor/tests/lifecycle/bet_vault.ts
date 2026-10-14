@@ -473,7 +473,7 @@ describe("bet_vault v2 + entry-side surplus fix", () => {
         new anchor.BN(ONE),
       )
       .accountsPartial({
-        authority: payer.publicKey,
+        authority: alice.kp.publicKey,
         vault,
         collateralMint: usdcMint,
         vaultCollateral: legacyCollateral(vault),
@@ -481,6 +481,7 @@ describe("bet_vault v2 + entry-side surplus fix", () => {
         tokenProgram: TOKEN_PROGRAM_ID,
         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
       })
+      .signers([alice.kp])
       .rpc();
     for (const [u, side, usd] of [
       [alice, "yes", 70],
@@ -511,7 +512,7 @@ describe("bet_vault v2 + entry-side surplus fix", () => {
     await m
       .launchVaultMarket(new anchor.BN(id))
       .accountsPartial({
-        payer: payer.publicKey,
+        payer: mallory.kp.publicKey,
         vault: legacy.vault,
         market,
         collateralMint: usdcMint,
@@ -527,6 +528,7 @@ describe("bet_vault v2 + entry-side surplus fix", () => {
         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
       })
       .preInstructions([CU])
+      .signers([mallory.kp])
       .rpc();
     for (const u of [alice, bob]) {
       await m
@@ -724,9 +726,15 @@ describe("bet_vault v2 + entry-side surplus fix", () => {
     for (const k of ["A", "B", "C", "F"]) await resolveBet(alice, bets[k], "yes");
     await resolveBet(alice, bets.D, "no");
     await resolveBet(alice, bets.I, "no");
-    for (const market of [legacy.market!, legacy.vaultMarket!]) {
-      await m.resolveMarket({ yes: {} }).accountsPartial({ signer: payer.publicKey, market }).rpc();
-    }
+    await m
+      .resolveMarket({ yes: {} })
+      .accountsPartial({ signer: alice.kp.publicKey, market: legacy.vaultMarket! })
+      .signers([alice.kp])
+      .rpc();
+    await m
+      .resolveMarket({ yes: {} })
+      .accountsPartial({ signer: payer.publicKey, market: legacy.market! })
+      .rpc();
     for (const k of ["A", "B", "C", "D", "F", "I"]) await settle(bets[k]);
     await expectErr(settle(bets.A), "BetVaultAlreadySettled");
   });

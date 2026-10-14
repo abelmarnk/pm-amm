@@ -132,7 +132,7 @@ pub fn handler(ctx: Context<LaunchVaultMarket>, market_id: u64) -> Result<()> {
     );
 
     let market = &mut ctx.accounts.market;
-    market.authority = ctx.accounts.payer.key();
+    market.authority = vault.authority;
     market.market_id = market_id;
     market.collateral_mint = ctx.accounts.collateral_mint.key();
     market.yes_mint = ctx.accounts.yes_mint.key();
